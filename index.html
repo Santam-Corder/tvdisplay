@@ -160,6 +160,27 @@
             background-color: rgba(46, 204, 113, 0.1);
             color: var(--success-color);
         }
+
+        .countdown {
+            font-family: monospace;
+            font-size: 0.85rem;
+            text-align: center;
+            margin: 5px 0;
+            padding: 3px;
+            border-radius: 3px;
+            background-color: rgba(0, 0, 0, 0.03);
+            color: var(--secondary-color);
+        }
+        
+        .countdown.urgent {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: var(--danger-color);
+        }
+        
+        .countdown.warning {
+            background-color: rgba(243, 156, 18, 0.1);
+            color: var(--warning-color);
+        }
         
         .team-members {
             margin-top: 15px;
@@ -249,7 +270,7 @@
 <body>
     <div class="dashboard">
         <div class="header">
-            <h1>BIDS AND SUBMISSION DASHBOARD</h1>
+            <h1>Business Development Dashboard</h1>
             <div class="clock" id="realtime-clock">00:00:00</div>
             <div class="date" id="current-date">Monday, January 1, 2023</div>
         </div>
@@ -266,13 +287,14 @@
     </div>
 
     <script>
-        // Project data - easy to edit and maintain
+        // Project data - now includes optional deadline time (defaults to end of day)
         const projects = [
             {
                 id: 1,
                 title: "WASL Jewel of Creek",
                 status: "completed",
                 deadline: "2025-06-10",
+                deadlineTime: "23:59", // Optional time (24h format)
                 lead: "Amine Boukhris",
                 startDate: "May 1, 2025",
                 progress: 100,
@@ -284,6 +306,7 @@
                 title: "Miral Theme Parks",
                 status: "completed",
                 deadline: "2025-06-19",
+                deadlineTime: "17:00", // 5 PM deadline
                 lead: "Afzal A. Rahiman",
                 startDate: "Mar 10, 2025",
                 progress: 100,
@@ -295,6 +318,7 @@
                 title: "Minor Hotels",
                 status: "active",
                 deadline: "2025-06-25",
+                deadlineTime: "12:00", // 12 PM deadline
                 lead: "Amine Boukhris",
                 startDate: "June 11, 2025",
                 progress: 55,
@@ -306,6 +330,7 @@
                 title: "YAS Beach",
                 status: "active",
                 deadline: "2025-06-27",
+deadlineTime: "15:00", // 3 PM deadline
                 lead: "Afzal A. Rahiman",
                 startDate: "June 10, 2025",
                 progress: 10,
@@ -317,6 +342,7 @@
                 title: "Majid Al Futtaim - Landscaping",
                 status: "active",
                 deadline: "2025-06-25",
+                deadlineTime: "12:00", // Noon deadline
                 lead: "Sama Lavala",
                 startDate: "May 26, 2025",
                 progress: 35,
@@ -328,6 +354,7 @@
                 title: "VFS Global",
                 status: "active",
                 deadline: "2025-06-23",
+deadlineTime: "17:00", // 5 PM deadline
                 lead: "Amine Boukhris",
                 startDate: "June 19, 2025",
                 progress: 10,
@@ -339,6 +366,7 @@
                 title: "AWR Zone 3 - Additional Properties",
                 status: "active",
                 deadline: "2025-06-30",
+                deadlineTime: "23:30", // 12:30 PM deadline
                 lead: "Afzal A. Rahiman",
                 startDate: "June 12, 2025",
                 progress: 30,
@@ -350,6 +378,7 @@
                 title: "FM Services at DAEP- Renewal",
                 status: "active",
                 deadline: "2025-06-25",
+deadlineTime: "12:00", // Noon deadline
                 lead: "FM Department",
                 startDate: "June 19, 2025",
                 progress: 10,
@@ -367,7 +396,6 @@
                 timeline: "",
                 team: ["Commercial", "DXB operations"]
             }
-
         ];
 
         // Function to render all projects
@@ -387,6 +415,9 @@
                     projectEl.className = `project-card ${project.status === 'urgent' ? 'urgent' : ''} ${project.status === 'completed' ? 'completed' : ''}`;
                     projectEl.setAttribute('data-status', project.status);
                     projectEl.setAttribute('data-deadline', project.deadline);
+                    if (project.deadlineTime) {
+                        projectEl.setAttribute('data-deadline-time', project.deadlineTime);
+                    }
                     
                     let statusClass = 'status-active';
                     let statusText = 'Active';
@@ -423,8 +454,12 @@
                             </div>
                             <div class="progress-details">
                                 <span>Start: ${project.startDate.split(',')[0]}</span>
-                                <span>Deadline: ${formatDateForDisplay(project.deadline)}</span>
+                                <span>Deadline: ${formatDateForDisplay(project.deadline)}${project.deadlineTime ? ' at ' + formatTimeForDisplay(project.deadlineTime) : ''}</span>
                             </div>
+                        </div>
+                        
+                        <div class="countdown" id="countdown-${project.id}">
+                            Calculating countdown...
                         </div>
                         
                         <div class="deadline" id="deadline-${project.id}">
@@ -452,6 +487,26 @@
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
 
+        // Helper function to format time for display
+        function formatTimeForDisplay(timeStr) {
+            const [hours, minutes] = timeStr.split(':');
+            const hour = parseInt(hours);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 || 12;
+            return `${displayHour}:${minutes} ${ampm}`;
+        }
+
+        // Create full deadline datetime
+        function createDeadlineDateTime(deadlineStr, timeStr) {
+            // Default to end of day if no time specified
+            if (!timeStr) timeStr = "23:59";
+            
+            const [year, month, day] = deadlineStr.split('-');
+            const [hours, minutes] = timeStr.split(':');
+            
+            return new Date(year, month - 1, day, hours, minutes, 0);
+        }
+
         // Update real-time clock
         function updateClock() {
             const now = new Date();
@@ -465,7 +520,7 @@
             const dateString = now.toLocaleDateString(undefined, options);
             document.getElementById('current-date').textContent = dateString;
             
-            // Update all project deadlines
+            // Update all project deadlines and countdowns
             updateProjectDeadlines(now);
         }
         
@@ -474,15 +529,51 @@
             
             projects.forEach(project => {
                 const deadlineStr = project.getAttribute('data-deadline');
-                const deadline = new Date(deadlineStr);
+                const deadlineTime = project.getAttribute('data-deadline-time');
+                const deadline = createDeadlineDateTime(deadlineStr, deadlineTime);
                 const startDateStr = project.querySelector('.info-item:nth-child(2) .info-value').textContent;
                 const startDate = parseDateString(startDateStr);
                 const progressValue = project.querySelector('.info-item:nth-child(3) .info-value').textContent;
                 const isCompleted = progressValue === '100%';
+                const projectId = project.querySelector('.countdown').id.split('-')[1];
+                const countdownElement = document.getElementById(`countdown-${projectId}`);
                 
-                // Calculate days remaining
+                // Calculate time remaining
                 const diffTime = deadline - now;
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                // Calculate countdown (days, hours, minutes, seconds)
+                let countdownText = '';
+                let countdownClass = '';
+                
+                if (isCompleted) {
+                    countdownText = 'Completed';
+                    countdownClass = 'normal';
+                } else if (diffTime <= 0) {
+                    countdownText = 'Deadline passed';
+                    countdownClass = 'urgent';
+                } else {
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                    const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const diffMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+                    const diffSeconds = Math.floor((diffTime % (1000 * 60)) / 1000);
+                    
+                    if (diffDays > 0) {
+                        countdownText = `${diffDays}d ${diffHours}h ${diffMinutes}m`;
+                    } else {
+                        countdownText = `${diffHours}h ${diffMinutes}m ${diffSeconds}s`;
+                    }
+                    
+                    if (diffDays <= 3) {
+                        countdownClass = 'urgent';
+                    } else if (diffDays <= 7) {
+                        countdownClass = 'warning';
+                    }
+                }
+                
+                // Update countdown display
+                countdownElement.textContent = countdownText;
+                countdownElement.className = `countdown ${countdownClass}`;
                 
                 // Update deadline display
                 const deadlineElement = project.querySelector('.deadline');
