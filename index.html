@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Development Dashboard</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-gray: #ecf0f1;
+            --dark-gray: #7f8c8d;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .dashboard {
+            max-width: 2100px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 20px;
+            background-color: var(--secondary-color);
+            color: white;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .clock {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .date {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+        
+        .project-card {
+            background-color: white;
+            border-radius: 7px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            flex: 1 1 calc(25% - 20px); /* 4 cards per row with gap */
+            min-width: 300px;
+        }
+        
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background-color: var(--primary-color);
+        }
+        
+        .project-card.urgent::before {
+            background-color: var(--danger-color);
+        }
+        
+        .project-card.warning::before {
+            background-color: var(--warning-color);
+        }
+        
+        .project-card.completed::before {
+            background-color: var(--success-color);
+        }
+        
+        h2 {
+            margin-top: 0;
+            color: var(--secondary-color);
+            border-bottom: 2px solid var(--light-gray);
+            padding-bottom: 10px;
+        }
+        
+        .project-info {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: var(--dark-gray);
+        }
+        
+        .info-value {
+            color: var(--secondary-color);
+            text-align: right;
+        }
+        
+        .progress-container {
+            margin: 15px 0;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background-color: var(--light-gray);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background-color: var(--primary-color);
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+        
+        .progress-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--dark-gray);
+            margin-top: 5px;
+        }
+        
+        .deadline {
+            font-weight: bold;
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .deadline.urgent {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: var(--danger-color);
+        }
+        
+        .deadline.warning {
+            background-color: rgba(243, 156, 18, 0.1);
+            color: var(--warning-color);
+        }
+        
+        .deadline.normal {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: var(--success-color);
+        }
+        
+        .team-members {
+            margin-top: 15px;
+        }
+        
+        .member {
+            display: inline-block;
+            background-color: var(--light-gray);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .project-status {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 0.8rem;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        
+        .status-active {
+            background-color: rgba(52, 152, 219, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .status-completed {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: var(--success-color);
+        }
+        
+        .status-delayed {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: var(--danger-color);
+        }
+        
+        .filter-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: white;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .filter-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .projects-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 1600px) {
+            .project-card {
+                flex: 1 1 calc(33.33% - 20px); /* 3 cards per row on smaller screens */
+            }
+        }
+        
+        @media (max-width: 1200px) {
+            .project-card {
+                flex: 1 1 calc(50% - 20px); /* 2 cards per row on even smaller screens */
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .project-card {
+                flex: 1 1 100%; /* 1 card per row on mobile */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>Business Development Dashboard</h1>
+            <div class="clock" id="realtime-clock">00:00:00</div>
+            <div class="date" id="current-date">Monday, January 1, 2023</div>
+        </div>
+        
+        <div class="filter-controls">
+            <button class="filter-btn active" data-filter="all">All Projects</button>
+            <button class="filter-btn" data-filter="active">Active</button>
+            <button class="filter-btn" data-filter="completed">Completed</button>
+            <button class="filter-btn" data-filter="urgent">Priority</button>
+        </div>
+        
+        <!-- Projects will be added dynamically by JavaScript -->
+        <div id="projects-container"></div>
+    </div>
+
+    <script>
+        // Project data - easy to edit and maintain
+        const projects = [
+            {
+                id: 1,
+                title: "WASL Jewel of Creek",
+                status: "completed",
+                deadline: "2025-06-10",
+                lead: "Amine Boukhris",
+                startDate: "May 1, 2025",
+                progress: 100,
+                timeline: "2pm",
+                team: ["Technical", "Commercial", "DXB Operation"]
+            },
+            {
+                id: 2,
+                title: "Miral Theme Parks",
+                status: "completed",
+                deadline: "2025-06-19",
+                lead: "Afzal A. Rahiman",
+                startDate: "Mar 10, 2025",
+                progress: 100,
+                timeline: "",
+                team: ["Technical", "Commercial", "AUH Operations"]
+            },
+            {
+                id: 3,
+                title: "Minor Hotels",
+                status: "active",
+                deadline: "2025-06-25",
+                lead: "Amine Boukhris",
+                startDate: "June 11, 2025",
+                progress: 55,
+                timeline: "",
+                team: ["Technical", "Commercial", "Cleaning Division"]
+            },
+            {
+                id: 4,
+                title: "YAS Beach",
+                status: "active",
+                deadline: "2025-06-27",
+                lead: "Afzal A. Rahiman",
+                startDate: "June 10, 2025",
+                progress: 10,
+                timeline: "",
+                team: ["Commercial", "Technical"]
+            },
+            {
+                id: 5,
+                title: "Majid Al Futtaim - Landscaping",
+                status: "active",
+                deadline: "2025-06-25",
+                lead: "Sama Lavala",
+                startDate: "May 26, 2025",
+                progress: 35,
+                timeline: "",
+                team: ["DXB Operations", "Sales"]
+            },
+            {
+                id: 6,
+                title: "VFS Global",
+                status: "active",
+                deadline: "2025-06-23",
+                lead: "Amine Boukhris",
+                startDate: "June 19, 2025",
+                progress: 10,
+                timeline: "",
+                team: ["Technical", "Commercial", "Cleaning Operation"]
+            },
+            {
+                id: 7,
+                title: "AWR Zone 3 - Additional Properties",
+                status: "active",
+                deadline: "2025-06-30",
+                lead: "Afzal A. Rahiman",
+                startDate: "June 12, 2025",
+                progress: 30,
+                timeline: "",
+                team: ["Commercial", "Technical", "Sales", "IFM"]
+            },
+            {
+                id: 8,
+                title: "FM Services at DAEP- Renewal",
+                status: "active",
+                deadline: "2025-06-25",
+                lead: "FM Department",
+                startDate: "June 19, 2025",
+                progress: 10,
+                timeline: "",
+                team: ["Commercial", "DXB Operations"]
+            },
+            {
+                id: 9,
+                title: "Nshama Security",
+                status: "completed",
+                deadline: "2025-06-17",
+                lead: "Amine",
+                startDate: "May 12, 2025",
+                progress: 100,
+                timeline: "",
+                team: ["Commercial", "DXB operations"]
+            }
+
+        ];
+
+        // Function to render all projects
+        function renderProjects() {
+            const container = document.getElementById('projects-container');
+            container.innerHTML = '';
+            
+            // Create rows with 4 projects each
+            for (let i = 0; i < projects.length; i += 4) {
+                const row = document.createElement('div');
+                row.className = 'projects-row';
+                
+                // Add up to 4 projects to this row
+                for (let j = 0; j < 4 && (i + j) < projects.length; j++) {
+                    const project = projects[i + j];
+                    const projectEl = document.createElement('div');
+                    projectEl.className = `project-card ${project.status === 'urgent' ? 'urgent' : ''} ${project.status === 'completed' ? 'completed' : ''}`;
+                    projectEl.setAttribute('data-status', project.status);
+                    projectEl.setAttribute('data-deadline', project.deadline);
+                    
+                    let statusClass = 'status-active';
+                    let statusText = 'Active';
+                    if (project.status === 'completed') {
+                        statusClass = 'status-completed';
+                        statusText = 'Completed';
+                    } else if (project.status === 'urgent') {
+                        statusClass = 'status-delayed';
+                        statusText = 'Urgent';
+                    }
+                    
+                    projectEl.innerHTML = `
+                        <span class="project-status ${statusClass}">${statusText}</span>
+                        <h2>${project.title}</h2>
+                        
+                        <div class="project-info">
+                            <div class="info-item">
+                                <span class="info-label">Project Lead:</span>
+                                <span class="info-value">${project.lead}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Start Date:</span>
+                                <span class="info-value">${project.startDate}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Progress:</span>
+                                <span class="info-value" id="progress-${project.id}">${project.progress}%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div class="progress" id="progress-bar-${project.id}" style="width: ${project.progress}%"></div>
+                            </div>
+                            <div class="progress-details">
+                                <span>Start: ${project.startDate.split(',')[0]}</span>
+                                <span>Deadline: ${formatDateForDisplay(project.deadline)}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="deadline" id="deadline-${project.id}">
+                            Calculating...
+                        </div>
+                        
+                        <div class="team-members">
+                            ${project.timeline ? `<span class="member">Timeline: ${project.timeline}</span>` : ''}
+                            ${project.team.map(member => `<span class="member">${member}</span>`).join('')}
+                        </div>
+                    `;
+                    
+                    row.appendChild(projectEl);
+                }
+                
+                container.appendChild(row);
+            }
+            
+            updateProjectDeadlines(new Date());
+        }
+
+        // Helper function to format date for display
+        function formatDateForDisplay(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        // Update real-time clock
+        function updateClock() {
+            const now = new Date();
+            
+            // Update time
+            const timeString = now.toLocaleTimeString();
+            document.getElementById('realtime-clock').textContent = timeString;
+            
+            // Update date
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const dateString = now.toLocaleDateString(undefined, options);
+            document.getElementById('current-date').textContent = dateString;
+            
+            // Update all project deadlines
+            updateProjectDeadlines(now);
+        }
+        
+        function updateProjectDeadlines(now) {
+            const projects = document.querySelectorAll('.project-card');
+            
+            projects.forEach(project => {
+                const deadlineStr = project.getAttribute('data-deadline');
+                const deadline = new Date(deadlineStr);
+                const startDateStr = project.querySelector('.info-item:nth-child(2) .info-value').textContent;
+                const startDate = parseDateString(startDateStr);
+                const progressValue = project.querySelector('.info-item:nth-child(3) .info-value').textContent;
+                const isCompleted = progressValue === '100%';
+                
+                // Calculate days remaining
+                const diffTime = deadline - now;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                // Update deadline display
+                const deadlineElement = project.querySelector('.deadline');
+                if (diffDays <= 0) {
+                    if (isCompleted) {
+                        deadlineElement.textContent = 'Completed on time';
+                        deadlineElement.className = 'deadline normal';
+                    } else {
+                        deadlineElement.textContent = `Overdue by ${Math.abs(diffDays)} days`;
+                        deadlineElement.className = 'deadline urgent';
+                        project.classList.add('urgent');
+                    }
+                } else if (diffDays <= 3) {
+                    deadlineElement.textContent = `Due in ${diffDays} days`;
+                    deadlineElement.className = 'deadline urgent';
+                    project.classList.add('urgent');
+                } else if (diffDays <= 7) {
+                    deadlineElement.textContent = `Due in ${diffDays} days`;
+                    deadlineElement.className = 'deadline warning';
+                    project.classList.add('warning');
+                } else {
+                    deadlineElement.textContent = `Due in ${diffDays} days`;
+                    deadlineElement.className = 'deadline normal';
+                }
+                
+                // Update progress bar color if overdue
+                if (diffDays <= 0 && !isCompleted) {
+                    const progressBar = project.querySelector('.progress');
+                    progressBar.style.backgroundColor = 'var(--danger-color)';
+                }
+            });
+        }
+        
+        function parseDateString(dateStr) {
+            // Simple date parser (works with "Month Day, Year" format)
+            const months = {
+                'January': 0, 'February': 1, 'March': 2, 'April': 3, 'May': 4, 'June': 5,
+                'July': 6, 'August': 7, 'September': 8, 'October': 9, 'November': 10, 'December': 11
+            };
+            
+            const parts = dateStr.split(' ');
+            if (parts.length === 3) {
+                const month = months[parts[0]];
+                const day = parseInt(parts[1].replace(',', ''));
+                const year = parseInt(parts[2]);
+                return new Date(year, month, day);
+            }
+            return null;
+        }
+        
+        // Filter projects
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update active button
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const filter = btn.getAttribute('data-filter');
+                const projects = document.querySelectorAll('.project-card');
+                
+                projects.forEach(project => {
+                    const status = project.getAttribute('data-status');
+                    const isUrgent = project.classList.contains('urgent');
+                    
+                    if (filter === 'all' || 
+                        (filter === 'active' && status === 'active') || 
+                        (filter === 'completed' && status === 'completed') ||
+                        (filter === 'urgent' && isUrgent)) {
+                        project.style.display = 'block';
+                    } else {
+                        project.style.display = 'none';
+                    }
+                });
+            });
+        });
+        
+        // Initialize
+        renderProjects();
+        updateClock();
+        setInterval(updateClock, 1000);
+    </script>
+</body>
+</html>
